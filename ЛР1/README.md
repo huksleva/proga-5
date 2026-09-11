@@ -198,6 +198,8 @@ myremotemodule.myfoo()
 Leonid Tots's module is imported
 ```
 
+![img.png](img.png)
+
 ---
 
 # Описание компонентов
