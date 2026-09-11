@@ -93,13 +93,13 @@ remote-import/
 Клонировать проект:
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/huksleva/proga-5
 ```
 
 Перейти в директорию проекта:
 
 ```bash
-cd remote-import
+cd ЛР1
 ```
 
 Создать виртуальное окружение:
@@ -137,7 +137,7 @@ pip install -e .
 Перейти в папку с удаленным модулем:
 
 ```bash
-cd rootserver
+cd src/rootserver
 ```
 
 Запустить сервер:
@@ -165,7 +165,7 @@ http://localhost:8000/myremotemodule.py
 В другом терминале из корня проекта выполнить:
 
 ```bash
-python -i activation_script.py
+python -i .\src\activation_script.py
 ```
 
 После запуска будет подключен новый обработчик импорта.
@@ -173,9 +173,7 @@ python -i activation_script.py
 Добавить удаленный сервер в список путей:
 
 ```python
-sys.path.append(
-    "http://localhost:8000"
-)
+sys.path.append("http://localhost:8000")
 ```
 
 ---
