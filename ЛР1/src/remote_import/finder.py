@@ -5,23 +5,36 @@ from .loader import URLLoader
 
 
 class URLFinder(PathEntryFinder):
+    def __init__(self, url, available, packages):
+        self.url = url.rstrip("/") + "/"
+        self.available = set(available)
+        self.packages = set(packages)
 
-    def __init__(self, url, available):
-        self.url = url
-        self.available = available
-
-
-    def find_spec(self, name, target=None):
+    def find_spec(self, fullname, target=None):
+        name = fullname.rsplit(".", 1)[-1]
 
         if name in self.available:
-            origin = f"{self.url}/{name}.py"
-
-            loader = URLLoader()
+            origin = f"{self.url}{name}.py"
 
             return spec_from_loader(
-                name,
-                loader,
-                origin=origin
+                fullname,
+                URLLoader(),
+                origin=origin,
             )
+
+        if name in self.packages:
+            package_url = f"{self.url}{name}/"
+            origin = f"{package_url}__init__.py"
+
+            spec = spec_from_loader(
+                fullname,
+                URLLoader(),
+                origin=origin,
+                is_package=True,
+            )
+
+            spec.submodule_search_locations = [package_url]
+
+            return spec
 
         return None

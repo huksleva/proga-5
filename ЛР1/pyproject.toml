@@ -9,7 +9,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "remote-import"
 version = "1.0.0"
-description = "HTTP remote Python module import implementation"
+description = "HTTP remote Python module and package import implementation"
 authors = [
     {name = "Leonid Tots"}
 ]

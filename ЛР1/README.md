@@ -1,361 +1,273 @@
-## README.md
+# Лабораторная работа 1 — Реализация удалённого импорта
+![img.png](img.png)
+## Цель работы
 
+Реализовать механизм удалённого импорта Python-модулей по HTTP/HTTPS с использованием `sys.path_hooks`, `PathEntryFinder` и собственного загрузчика.
 
-# Remote Import
+В работе реализованы:
 
-Реализация механизма удаленного импорта Python-модулей через HTTP.
-
-Лабораторная работа №1  
-Тема: «Реализация удаленного импорта»
-
-## Описание проекта
-
-Данный проект демонстрирует расширение стандартного механизма импорта Python.
-
-Обычно Python ищет модули только локально: в текущей директории, установленных пакетах и путях из `sys.path`.
-
-В рамках проекта реализован собственный механизм загрузки модулей, который позволяет импортировать Python-файлы, расположенные на удаленном HTTP-сервере.
-
-После подключения механизма становится возможным выполнение:
-
-```python
-import myremotemodule
-````
-
-даже если файл `myremotemodule.py` находится не на локальном компьютере, а на HTTP-сервере.
-
----
-
-## Основная идея работы
-
-Python при импорте модуля использует список путей:
-
-```python
-sys.path
-```
-
-Для каждого пути Python вызывает обработчики из:
-
-```python
-sys.path_hooks
-```
-
-В проекте добавляется собственный обработчик `url_hook`, который умеет работать с URL-адресами.
-
-Например:
-
-```python
-sys.path.append("http://localhost:8000")
-```
-
-После добавления такого пути Python передает его в `url_hook`.
-
-Далее:
-
-1. `url_hook` проверяет, является ли путь HTTP-адресом.
-2. Загружает список доступных `.py` файлов с сервера.
-3. Создает объект `URLFinder`.
-4. `URLFinder` ищет необходимый модуль.
-5. `URLLoader` скачивает исходный код файла.
-6. Код компилируется и выполняется внутри импортируемого модуля.
-
----
+- удалённый импорт обычных `.py`-модулей;
+- загрузка исходного кода через `requests`;
+- обработка недоступного удалённого узла;
+- удалённый импорт Python-пакета;
+- импорт вложенных модулей пакета;
+- подготовка внешнего HTTP(S)-размещения через GitHub Pages.
 
 ## Структура проекта
 
-```
-remote-import/
-
+```text
+ЛР1/
 ├── src/
+│   ├── activation_script.py
 │   └── remote_import/
 │       ├── __init__.py
 │       ├── finder.py
-│       ├── loader.py
-│       └── hook.py
-│
+│       ├── hook.py
+│       └── loader.py
 ├── rootserver/
-│   └── myremotemodule.py
-│
-├── activation_script.py
-│
+│   ├── index.html
+│   ├── myremotemodule.py
+│   └── remote_package/
+│       ├── index.html
+│       ├── __init__.py
+│       ├── calculator.py
+│       └── greetings.py
+├── github_pages/
+│   ├── index.html
+│   ├── myremotemodule.py
+│   └── remote_package/
+│       ├── index.html
+│       ├── __init__.py
+│       ├── calculator.py
+│       └── greetings.py
 ├── examples/
-│   └── test_import.py
-│
+│   ├── test_local_module.py
+│   ├── test_local_package.py
+│   ├── test_github_pages.py
+│   └── test_unavailable_host.py
 ├── pyproject.toml
-├── README.md
-└── .gitignore
+└── README.md
 ```
 
----
+## Установка
 
-# Установка
+Создать виртуальное окружение и установить зависимости:
 
-Клонировать проект:
-
-```bash
-git clone https://github.com/huksleva/proga-5
-```
-
-Перейти в директорию проекта:
-
-```bash
-cd ЛР1
-```
-
-Создать виртуальное окружение:
-
-```bash
+```powershell
 python -m venv .venv
-```
-
-Активировать окружение:
-
-Windows:
-
-```bash
-.venv\Scripts\activate
-```
-
-Linux/macOS:
-
-```bash
-source .venv/bin/activate
-```
-
-Установить зависимости:
-
-```bash
+.\.venv\Scripts\Activate.ps1
 pip install -e .
 ```
 
----
+## Локальный тест обычного модуля
 
-# Запуск проекта
+Перейти в каталог проекта и запустить HTTP-сервер:
 
-## 1. Запуск HTTP-сервера
-
-Перейти в папку с удаленным модулем:
-
-```bash
-cd src/rootserver
+```powershell
+python -m http.server 8000 --directory rootserver
 ```
 
-Запустить сервер:
+В другом терминале:
 
-```bash
-python -m http.server
-```
-
-По умолчанию сервер будет доступен по адресу:
-
-```
-http://localhost:8000
-```
-
-Проверить наличие модуля:
-
-```
-http://localhost:8000/myremotemodule.py
-```
-
----
-
-## 2. Активация удаленного импорта
-
-В другом терминале из корня проекта выполнить:
-
-```bash
+```powershell
 python -i .\src\activation_script.py
 ```
 
-После запуска будет подключен новый обработчик импорта.
-
-Добавить удаленный сервер в список путей:
+После запуска интерпретатора:
 
 ```python
 sys.path.append("http://localhost:8000")
-```
+sys.path_importer_cache.clear()
 
----
-
-## 3. Проверка импорта
-
-Теперь можно импортировать модуль:
-
-```python
 import myremotemodule
-```
-
-И вызвать функцию:
-
-```python
 myremotemodule.myfoo()
 ```
 
-Результат:
+Ожидаемый результат:
 
-```
-Leonid Tots's module is imported
-```
-
-![img.png](img.png)
-
----
-
-# Описание компонентов
-
-## URL Hook
-
-Файл:
-
-```
-hook.py
+```text
+Leоnid Tots's module is imported
 ```
 
-Содержит функцию:
+## Тест удалённого пакета
+
+При работающем сервере:
+
+```powershell
+python .\examples\test_local_package.py
+```
+
+Ожидаемый результат:
+
+```text
+5
+20
+Hello, student!
+```
+
+Пакет имеет следующую структуру:
+
+```text
+remote_package/
+├── __init__.py
+├── calculator.py
+└── greetings.py
+```
+
+При импорте `remote_package` загружается удалённый `__init__.py`. Затем относительные импорты `.calculator` и `.greetings` также обрабатываются механизмом удалённого импорта.
+
+## Как реализована поддержка пакетов
+
+Для обычного модуля используется:
+
+```text
+URL/module.py
+```
+
+Для пакета используется:
+
+```text
+URL/package/__init__.py
+```
+
+Для пакета в `ModuleSpec` устанавливается:
 
 ```python
-url_hook()
+is_package=True
 ```
 
-Она добавляется в:
+и:
 
 ```python
-sys.path_hooks
+spec.submodule_search_locations = [package_url]
 ```
 
-и отвечает за обработку URL-адресов.
+Благодаря этому Python понимает, что импортированный объект является пакетом и может искать внутри него дочерние модули.
 
-Она:
+Цепочка работы:
 
-* проверяет корректность URL;
-* получает список файлов с сервера;
-* создает объект поиска модулей.
-
----
-
-## URL Finder
-
-Файл:
-
-```
-finder.py
-```
-
-Содержит класс:
-
-```python
+```text
+sys.path
+    ↓
+URL
+    ↓
+url_hook
+    ↓
 URLFinder
+    ↓
+URLLoader
+    ↓
+requests.get()
+    ↓
+compile()
+    ↓
+exec()
 ```
 
-Он отвечает за поиск необходимого модуля.
+Для вложенного импорта пакета цепочка повторяется для URL самого пакета.
 
-Например, при:
+## Обработка недоступного узла
+
+Если HTTP-запрос завершился ошибкой, `url_hook` перехватывает `requests.RequestException` и преобразует её в `ImportError`.
+
+Проверка:
+
+```powershell
+python .\examples\test_unavailable_host.py
+```
+
+## Пункт 8 — внешний HTTP(S)-хост
+
+В каталоге `github_pages/` подготовлена полностью статическая версия удалённого сервера.
+
+Её можно разместить в GitHub Pages.
+
+1. Создать или использовать публичный GitHub-репозиторий.
+2. Скопировать содержимое каталога `github_pages/` в корень публикуемой директории Pages.
+3. В настройках репозитория включить GitHub Pages для нужной ветки и каталога.
+4. Получить адрес вида:
+
+```text
+https://USERNAME.github.io/REPOSITORY/
+```
+
+5. Открыть `examples/test_github_pages.py`.
+6. Заменить:
+
+```python
+REMOTE_URL = "https://YOUR_USERNAME.github.io/YOUR_REPOSITORY/"
+```
+
+на фактический адрес.
+7. Запустить:
+
+```powershell
+python .\examples\test_github_pages.py
+```
+
+Важно: в `github_pages/` присутствуют `index.html`, потому что механизм `url_hook` получает список доступных файлов через HTML-страницу каталога. Для обычного `SimpleHTTPRequestHandler` индекс генерируется автоматически, а для GitHub Pages статические `index.html` подготовлены вручную.
+
+## Основные компоненты
+
+### `url_hook`
+
+Проверяет, что элемент `sys.path` является HTTP/HTTPS-адресом, получает HTML каталога и определяет доступные модули и пакеты.
+
+### `URLFinder`
+
+Реализует `PathEntryFinder`.
+
+Для обычного модуля создаёт спецификацию с адресом:
+
+```text
+URL/module.py
+```
+
+Для пакета:
+
+```text
+URL/package/__init__.py
+```
+
+и задаёт `submodule_search_locations`.
+
+### `URLLoader`
+
+Получает исходный код через:
+
+```python
+requests.get(...)
+```
+
+После этого исходный текст компилируется:
+
+```python
+compile(source, url, mode="exec")
+```
+
+и выполняется в пространстве имён импортируемого модуля:
+
+```python
+exec(code, module.__dict__)
+```
+
+## Проверка ошибки до подключения URL
+
+До добавления удалённого адреса в `sys.path` модуль не должен находиться стандартным механизмом импорта:
 
 ```python
 import myremotemodule
 ```
 
-он проверяет наличие:
-
-```
-myremotemodule.py
-```
-
-на удаленном сервере.
-
-Если файл существует, создается описание модуля через:
+После:
 
 ```python
-spec_from_loader()
+sys.path.append("http://localhost:8000")
+sys.path_importer_cache.clear()
 ```
 
----
+механизм `url_hook` получает управление и находит удалённый модуль.
 
-## URL Loader
+## Результат
 
-Файл:
-
-```
-loader.py
-```
-
-Содержит класс:
-
-```python
-URLLoader
-```
-
-Он отвечает за загрузку и выполнение кода.
-
-Процесс:
-
-1. Отправляется HTTP-запрос к файлу.
-2. Полученный код компилируется:
-
-```python
-compile()
-```
-
-3. Выполняется внутри пространства имен модуля:
-
-```python
-exec()
-```
-
-После этого Python считает модуль обычным импортированным модулем.
-
----
-
-# Пример удаленного модуля
-
-Файл:
-
-```
-rootserver/myremotemodule.py
-```
-
-Содержимое:
-
-```python
-def myfoo():
-
-    author = "Leonid Tots"
-
-    print(
-        f"{author}'s module is imported"
-    )
-```
-
----
-
-# Обработка ошибок
-
-Реализована обработка ситуации, когда удаленный сервер недоступен.
-
-Если HTTP-сервер выключен или адрес недоступен, импорт не выполняется и возникает ошибка:
-
-```
-ImportError: Host unavailable
-```
-
----
-
-# Используемые технологии
-
-* Python 3.10+
-* importlib
-* sys.path_hooks
-* HTTP Server
-* requests
-
----
-
-# Автор
-
-Тоц Леонид Александрович
-
-Группа: ИВТ-2
-
-2026
-
+В лабораторной работе реализован собственный механизм удалённого импорта Python-кода по HTTP/HTTPS. Помимо обычных модулей реализована поддержка пакетов с `__init__.py` и вложенными модулями. Также добавлена обработка недоступного хоста и подготовлено внешнее размещение для проверки через GitHub Pages.
