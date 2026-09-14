@@ -3,7 +3,7 @@ import sys
 from remote_import import url_hook
 
 
-REMOTE_URL = "https://ТВОЙ_USERNAME.github.io/ТВОЙ_REPOSITORY/"
+REMOTE_URL = "https://github.com/huksleva/proga-5"
 
 
 sys.path_hooks.append(url_hook)
