@@ -1,6 +1,6 @@
 import sys
 
-REMOTE_URL = "https://YOUR_USERNAME.github.io/YOUR_REPOSITORY/"
+REMOTE_URL = "https://github.com/huksleva/proga-5"
 
 sys.path.append(REMOTE_URL)
 sys.path_importer_cache.clear()
