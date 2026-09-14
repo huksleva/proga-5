@@ -6,6 +6,9 @@ import requests
 from .finder import URLFinder
 
 
+_hook_active = False
+
+
 class LinkParser(HTMLParser):
     def __init__(self):
         super().__init__()
@@ -53,48 +56,59 @@ def is_valid_name(name):
 
 
 def url_hook(path):
+    global _hook_active
+
     if not path.startswith(("http://", "https://")):
         raise ImportError
 
-    base_url = path.rstrip("/") + "/"
+    if _hook_active:
+        raise ImportError
+
+    _hook_active = True
 
     try:
-        links = get_links(base_url)
-    except requests.RequestException as exc:
-        raise ImportError(
-            f"Host unavailable: {base_url}"
-        ) from exc
+        base_url = path.rstrip("/") + "/"
 
-    modules = set()
-    packages = set()
+        try:
+            links = get_links(base_url)
+        except requests.RequestException as exc:
+            raise ImportError(
+                f"Host unavailable: {base_url}"
+            ) from exc
 
-    for href in links:
-        name = get_name(href)
+        modules = set()
+        packages = set()
 
-        if href.endswith("/") and is_valid_name(name):
-            package_url = urljoin(base_url, f"{name}/")
+        for href in links:
+            name = get_name(href)
 
-            try:
-                package_links = get_links(package_url)
-            except requests.RequestException:
-                continue
+            if href.endswith("/") and is_valid_name(name):
+                package_url = urljoin(base_url, f"{name}/")
 
-            package_files = {
-                get_name(package_href)
-                for package_href in package_links
-            }
+                try:
+                    package_links = get_links(package_url)
+                except requests.RequestException:
+                    continue
 
-            if "__init__.py" in package_files:
-                packages.add(name)
+                package_files = {
+                    get_name(package_href)
+                    for package_href in package_links
+                }
 
-        elif name.endswith(".py"):
-            module_name = name[:-3]
+                if "__init__.py" in package_files:
+                    packages.add(name)
 
-            if is_valid_name(module_name):
-                modules.add(module_name)
+            elif name.endswith(".py"):
+                module_name = name[:-3]
 
-    return URLFinder(
-        base_url,
-        modules,
-        packages,
-    )
+                if is_valid_name(module_name):
+                    modules.add(module_name)
+
+        return URLFinder(
+            base_url,
+            modules,
+            packages,
+        )
+
+    finally:
+        _hook_active = False
