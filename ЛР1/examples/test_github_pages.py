@@ -1,4 +1,3 @@
-import requests
 import sys
 
 from remote_import import url_hook
