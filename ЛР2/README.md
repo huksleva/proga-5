@@ -26,7 +26,7 @@
 взяты разделение исходников и тестов и проверки на нескольких версиях Python.
 Процесс публикации описан в
 [инструкции из задания](https://proglib.io/p/kak-opublikovat-svoyu-python-biblioteku-na-pypi-2020-01-28)
-и разделе Development and Publication ниже.
+и разделе «Разработка и публикация» ниже.
 
 ## Публикация и результаты проверки
 
@@ -34,32 +34,39 @@
 проверка обоих архивов через `twine check` и установка готового wheel в `.venv`.
 Реальные запросы к OpenWeather без пользовательского API-ключа не проверялись.
 
-Публикация ещё не выполнена: требуется доступ к аккаунту TestPyPI.
-После успешной загрузки сюда нужно добавить подтверждённую ссылку на пакет.
-В описании и метаданных уже указана ссылка на
+Пакет `huksleva-openweather` версии `0.1.0` опубликован в TestPyPI:
+[ссылка на опубликованный пакет для сдачи ЛР](https://test.pypi.org/project/huksleva-openweather/0.1.0/).
+Наличие релиза и ссылки на исходники проверено через публичный API TestPyPI.
+В опубликованном описании и метаданных указана ссылка на
 [GitHub-репозиторий](https://github.com/huksleva/proga-5).
 
 # huksleva-openweather
 
-Python client for OpenWeather current weather and five-day forecasts.
-Supports Python 3.10+ and exposes a library API and a command-line interface.
+Клиент OpenWeather для получения текущей погоды и прогноза на пять дней.
+Поддерживает Python 3.10 и новее. Доступен как библиотека и консольная команда.
 
-Source repository: [huksleva/proga-5](https://github.com/huksleva/proga-5).
-Package sources are in the `ЛР2` directory. Licensed under MIT.
+Репозиторий исходного кода: [huksleva/proga-5](https://github.com/huksleva/proga-5).
+Исходники пакета находятся в папке `ЛР2`. Лицензия: MIT.
 
-## Installation
+## Установка
 
-After publication to TestPyPI, install the dependency from PyPI and the package
-from TestPyPI separately:
+Установите зависимость из PyPI, а сам пакет из TestPyPI:
 
 ```console
 python -m pip install "requests>=2.32,<3"
-python -m pip install --index-url https://test.pypi.org/simple/ --no-deps huksleva-openweather
+python -m pip install --index-url https://test.pypi.org/simple/ --no-deps huksleva-openweather==0.1.0
 ```
 
-## Library
+## Использование библиотеки
 
-Create an API key in your OpenWeather account and set `OPENWEATHER_API_KEY`.
+Создайте ключ API в аккаунте OpenWeather и задайте переменную окружения
+`OPENWEATHER_API_KEY`. В PowerShell:
+
+```powershell
+$env:OPENWEATHER_API_KEY = "ваш-ключ-OpenWeather"
+```
+
+Пример получения погоды и прогноза:
 
 ```python
 import os
@@ -74,32 +81,85 @@ except OpenWeatherError as exc:
     print(exc)
 ```
 
-Responses retain the OpenWeather JSON structure. Units can be `metric`,
-`imperial`, or `standard`; the default language is `ru`. The default request
-timeout is ten seconds. HTTP, transport, and malformed-response errors raise
-`OpenWeatherError`; invalid arguments raise `ValueError`.
+Ответы сохраняют структуру JSON OpenWeather. Единицы измерения: `metric`
+(градусы Цельсия), `imperial` (градусы Фаренгейта) или `standard` (кельвины).
+По умолчанию используются `metric` и язык `ru`. Таймаут запроса: десять секунд.
+Ошибки HTTP, соединения и формата ответа вызывают `OpenWeatherError`,
+некорректные аргументы вызывают `ValueError`.
 
-## CLI
+## Командная строка
 
 ```console
 huksleva-weather "Moscow,RU"
 huksleva-weather "Moscow,RU" --forecast --units metric --lang en
 ```
 
-## Development and Publication
+## Разработка и публикация
 
-Run these commands from the package directory:
+### 1. Разместите исходники на GitHub
 
-```console
-python -m pip install -e .
-python -m unittest discover -s tests -v
-python -m pip install build twine
-python -m build
-python -m twine check dist/*
-python -m twine upload --repository testpypi dist/*
+Закоммитьте файлы проекта и отправьте изменения в
+[репозиторий](https://github.com/huksleva/proga-5), чтобы преподаватель мог
+просмотреть код. Папки `.venv`, `dist`, `build` и `*.egg-info` уже исключены
+из Git через `.gitignore`.
+
+### 2. Подготовьте аккаунт TestPyPI
+
+Зарегистрируйтесь на [TestPyPI](https://test.pypi.org/account/register/),
+подтвердите адрес электронной почты и настройте двухфакторную аутентификацию,
+если сайт её запрашивает. Это отдельный аккаунт, независимый от PyPI.
+В [настройках аккаунта](https://test.pypi.org/manage/account/) создайте API-токен.
+Для первой публикации выберите область действия «Entire account»:
+проект ещё не создан. Токен используется как пароль Twine; не записывайте
+его в репозиторий и не отправляйте в чат.
+
+### 3. Проверьте и заново соберите пакет
+
+Откройте PowerShell. Команды используют Python из `.venv` напрямую,
+поэтому активировать окружение не требуется:
+
+```powershell
+Set-Location "C:\Leo\projects\proga-5\ЛР2"
+.\.venv\Scripts\python.exe -m pip install -e . build twine
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+.\.venv\Scripts\python.exe -m build
+.\.venv\Scripts\python.exe -m twine check dist/*
 ```
 
-Twine asks for username `__token__` and a TestPyPI API token as the password.
-TestPyPI uses a separate account from PyPI. Do not commit credentials.
-The intended project URL is https://test.pypi.org/project/huksleva-openweather/;
-this URL is valid only after a successful upload.
+Сборку нужно повторить после изменения README: его содержимое включается
+в архивы и отображается на странице пакета.
+
+### 4. Загрузите пакет
+
+```powershell
+.\.venv\Scripts\python.exe -m twine upload --repository testpypi --username __token__ dist/huksleva_openweather-0.1.0*
+```
+
+Когда Twine запросит пароль, вставьте API-токен TestPyPI целиком, включая
+префикс `pypi-`. При вводе пароль не отображается. Ключ OpenWeather для
+публикации не нужен.
+
+После успешной загрузки проверьте
+[страницу пакета](https://test.pypi.org/project/huksleva-openweather/):
+описание должно содержать этот README и ссылку на GitHub.
+Версия `0.1.0` уже опубликована. Команда выше приведена как пример первой
+публикации; для обновления используйте новую версию, как описано ниже.
+
+Если имя занято другим пользователем, измените `name` в `pyproject.toml`
+на уникальное и обновите имя в командах и ссылках README.
+Для следующего релиза увеличьте `version`, например до `0.1.1`, заново
+соберите пакет и загружайте только архивы новой версии. Повторно загрузить
+тот же файл опубликованного релиза нельзя.
+
+### 5. Оформите результат ЛР
+
+Факт публикации и ссылка на пакет указаны в разделе
+«Публикация и результаты проверки». Отправьте обновлённый README на GitHub.
+В ответ на задание приведите
+[ссылку на версию 0.1.0 в TestPyPI](https://test.pypi.org/project/huksleva-openweather/0.1.0/).
+
+Изменения README на GitHub не меняют описание уже опубликованной версии
+в TestPyPI: для обновления описания потребуется новый релиз.
+
+Инструкция основана на
+[официальном руководстве по упаковке Python-проектов](https://packaging.python.org/en/latest/tutorials/packaging-projects/).
