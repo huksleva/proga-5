@@ -22,7 +22,7 @@ dependencies = [
 
 
 [project.urls]
-Repository = "https://github.com/huksleva/remote-import"
+Repository = "https://github.com/huksleva/proga-5"
 
 
 [tool.setuptools.packages.find]

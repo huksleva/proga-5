@@ -58,9 +58,12 @@ def is_valid_name(name):
 def url_hook(path):
     global _hook_active
 
+    # Этот path hook обслуживает только удалённые элементы sys.path.
     if not path.startswith(("http://", "https://")):
         raise ImportError
 
+    # requests может запускать дополнительные импорты, поэтому защищаем хук
+    # от повторного входа во время получения списка файлов.
     if _hook_active:
         raise ImportError
 
@@ -72,13 +75,19 @@ def url_hook(path):
         try:
             links = get_links(base_url)
         except requests.RequestException as exc:
-            raise ImportError(
-                f"Host unavailable: {base_url}"
-            ) from exc
+            # ImportError из path hook подавляется самим Python. Передаём
+            # ошибку finder-у, чтобы она дошла до вызывающего import.
+            return URLFinder(
+                base_url,
+                set(),
+                set(),
+                unavailable_error=exc,
+            )
 
         modules = set()
         packages = set()
 
+        # HTML-индекс каталога заменяет локальный просмотр файловой системы.
         for href in links:
             name = get_name(href)
 
