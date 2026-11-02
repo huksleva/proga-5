@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package library.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// Жанр книги. Нулевое значение — «не задано».
+enum Genre {
+  GENRE_UNSPECIFIED = 0;
+  GENRE_FICTION = 1;
+  GENRE_SCIENCE = 2;
+  GENRE_HISTORY = 3;
+}
+
+message Author {
+  string name = 1;
+  optional int32 birth_year = 2;   // optional: можно отличить «не задано» от 0
+}
+
+message Book {
+  int64 id = 1;
+  string title = 2;
+  repeated Author authors = 3;                   // список вложенных сообщений
+  Genre genre = 4;
+  map<string, string> attributes = 5;            // словарь
+  google.protobuf.Timestamp published_at = 6;    // стандартный тип «момент времени»
+  oneof source {                                 // задано не более одного поля
+    string isbn = 7;
+    string ebook_url = 8;
+  }
+}
+
+message Catalog {
+  repeated Book books = 1;
+}

@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package encoding_demo;
+
+message Demo {
+  int32 a = 1;
+  string b = 2;
+  int32 negative = 3;     // отрицательное число в int32
+  sint32 zigzag = 4;      // то же, но с zigzag-кодированием
+  repeated int32 nums = 5;
+}

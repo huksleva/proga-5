@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "proga-5-lr3-grpc"
+version = "1.0.0"
+description = "ЛР3: Protocol Buffers и gRPC, микросервисы Recommendations (gRPC) и Marketplace (FastAPI)"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{name = "Leonid Tots"}]
+dependencies = [
+    "grpcio",
+    "grpcio-tools",
+    "grpcio-reflection",
+    "fastapi[standard]",
+    "pytest",
+    "requests",
+]
+
+[project.urls]
+Repository = "https://github.com/huksleva/proga-5"
+
+# Проект — набор скриптов, а не устанавливаемый пакет: модули для сборки не ищем.
+[tool.setuptools]
+py-modules = []

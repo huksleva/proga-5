@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package library.v1;
+
+import "library/v1/library.proto";
+
+service LibraryService {
+  // Унарный вызов: книга по идентификатору
+  rpc GetBook (GetBookRequest) returns (Book);
+  // Серверный поток: книги выбранного жанра (GENRE_UNSPECIFIED — все)
+  rpc ListBooks (ListBooksRequest) returns (stream Book);
+  // Долгая операция, доступная только с токеном
+  rpc BuildReport (BuildReportRequest) returns (Report);
+}
+
+message GetBookRequest {
+  int64 id = 1;
+}
+
+message ListBooksRequest {
+  Genre genre = 1;
+}
+
+message BuildReportRequest {
+  double work_seconds = 1;   // сколько секунд «работает» сервер — для демонстрации дедлайнов
+}
+
+message Report {
+  int32 total_books = 1;
+  map<string, int32> books_by_genre = 2;
+}

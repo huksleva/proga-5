@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package helloworld;
+
+// Сервис приветствий
+service Greeter {
+  rpc SayHello (HelloRequest) returns (HelloReply);
+  rpc SayHelloAgain (HelloRequest) returns (HelloReply);
+  // Добавлено в п. 3.4 практики
+  rpc SayMyName (MyNameRequest) returns (MyNameReply);
+  // Упражнение 1 для самопроверки
+  rpc SayGoodbye (GoodbyeRequest) returns (GoodbyeReply);
+}
+
+message HelloRequest {
+  string name = 1;
+}
+
+message HelloReply {
+  string message = 1;
+}
+
+// Сообщения новых методов — на верхнем уровне файла, не внутри service
+message MyNameRequest {
+  string name = 1;
+}
+
+message MyNameReply {
+  string message = 1;
+}
+
+message GoodbyeRequest {
+  string name = 1;
+}
+
+message GoodbyeReply {
+  string message = 1;
+}

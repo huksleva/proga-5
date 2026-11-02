@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package stats;
+
+service Stats {
+  // Серверный поток: обратный отсчёт от start до 0
+  rpc Countdown (CountdownRequest) returns (stream CountdownReply);
+  // Клиентский поток: сумма присланных чисел
+  rpc Sum (stream Number) returns (SumReply);
+  // Двунаправленный поток: скользящее среднее после каждого числа
+  rpc RunningAverage (stream Number) returns (stream AverageReply);
+}
+
+message CountdownRequest { int32 start = 1; }
+message CountdownReply   { int32 value = 1; }
+message Number           { double value = 1; }
+message SumReply         { double total = 1; int32 count = 2; }
+message AverageReply     { double average = 1; int32 count = 2; }

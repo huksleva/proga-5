@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package evolution.v2;
+
+message User {
+  reserved 3;
+  reserved "nickname";
+  int64 id = 1;
+  string name = 2;
+  string email = 4;     // новое поле с новым номером
+}

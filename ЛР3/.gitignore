@@ -1,0 +1,8 @@
+# Сгенерированный protobuf-код и кэш не коммитим: генерируется командой python generate.py
+*_pb2.py
+*_pb2.pyi
+*_pb2_grpc.py
+__pycache__/
+.pytest_cache/
+.venv/
+.logs/

@@ -1,0 +1,18 @@
+services:
+  recommendations:
+    build:
+      context: .
+      dockerfile: recommendations/Dockerfile
+    image: recommendations
+
+  marketplace:
+    build:
+      context: .
+      dockerfile: marketplace/Dockerfile
+    image: marketplace
+    environment:
+      RECOMMENDATIONS_HOST: recommendations
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      - recommendations
