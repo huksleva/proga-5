@@ -37,6 +37,8 @@ LOGS = ROOT / ".logs"
 PY = sys.executable
 ENV = {**os.environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8", "PYTHONUNBUFFERED": "1"}
 
+MKT_PORT = 8000                      # порт Marketplace на хосте; в main() подбирается свободный
+BASE = f"http://127.0.0.1:{MKT_PORT}"
 report: list[str] = []
 summary: list[tuple[str, bool]] = []
 
@@ -112,6 +114,18 @@ class Background:
                 self.process.kill()
         self.log.close()
         return self.log_path.read_text(encoding="utf-8", errors="replace").strip()
+
+
+def pick_port(candidates: tuple[int, ...] = (8000, 8080, 8001, 8888, 18000)) -> int:
+    """Первый порт, который можно занять (на Windows часть портов зарезервирована системой)."""
+    for port in candidates:
+        with socket.socket() as sock:
+            try:
+                sock.bind(("127.0.0.1", port))
+                return port
+            except OSError:
+                continue
+    raise SystemExit(f"Нет свободного порта из {candidates}")
 
 
 def wait_port(port: int, timeout: float = 20) -> bool:
@@ -228,27 +242,27 @@ def step_microservices() -> None:
                "Микросервисы: запуск Recommendations")
         return
     mkt_env = {**ENV, "RECOMMENDATIONS_HOST": "localhost"}
-    mkt = Background("marketplace", [PY, "-m", "uvicorn", "marketplace:app", "--port", "8000"],
+    mkt = Background("marketplace", [PY, "-m", "uvicorn", "marketplace:app", "--port", str(MKT_PORT)],
                      MS / "marketplace", env=mkt_env)
-    if not wait_port(8000):
-        record("python -m uvicorn marketplace:app --port 8000",
+    if not wait_port(MKT_PORT):
+        record(f"python -m uvicorn marketplace:app --port {MKT_PORT}",
                "[Marketplace не запустился]\n" + mkt.stop(), False, "Микросервисы: запуск Marketplace")
         rec.stop()
         return
     time.sleep(0.5)
     summary.append(("Микросервисы: оба сервиса запущены локально", True))
     prose("Оба сервиса запущены отдельными процессами. Документация OpenAPI: "
-          "http://127.0.0.1:8000/docs.")
+          f"{BASE}/docs.")
 
-    http_step("http://127.0.0.1:8000/api/v1/recommendations?user_id=1&category=science_fiction&max_results=2",
+    http_step(f"{BASE}/api/v1/recommendations?user_id=1&category=science_fiction&max_results=2",
               "Marketplace: REST API → gRPC")
     prose("Валидация FastAPI: `max_results=50` вне диапазона 1..10 → 422.")
-    http_step("http://127.0.0.1:8000/api/v1/recommendations?user_id=1&max_results=50",
+    http_step(f"{BASE}/api/v1/recommendations?user_id=1&max_results=50",
               "Marketplace: валидация (422)", expect=422)
-    http_step("http://127.0.0.1:8000/", "Marketplace: HTML-страница", pretty=False)
+    http_step(f"{BASE}/", "Marketplace: HTML-страница", pretty=False)
     try:
-        spec = json.loads(http_get("http://127.0.0.1:8000/openapi.json")[1])
-        record("GET http://127.0.0.1:8000/openapi.json  # пути OpenAPI",
+        spec = json.loads(http_get(f"{BASE}/openapi.json")[1])
+        record(f"GET {BASE}/openapi.json  # пути OpenAPI",
                "\n".join(f"{method.upper()} {path}" for path, item in spec["paths"].items() for method in item))
     except Exception as error:
         record("GET /openapi.json", f"[ошибка: {error}]", False)
@@ -261,7 +275,7 @@ def step_microservices() -> None:
     prose("**Отказ зависимости.** Останавливаем Recommendations: Marketplace не падает, а возвращает 503.")
     rec_log = rec.stop()
     time.sleep(0.5)
-    http_step("http://127.0.0.1:8000/api/v1/recommendations?user_id=1",
+    http_step(f"{BASE}/api/v1/recommendations?user_id=1",
               "Marketplace: 503 при недоступном Recommendations", expect=503)
     mkt_log = mkt.stop()
     record("# вывод Recommendations", rec_log or "(пусто)")
@@ -288,11 +302,11 @@ def step_docker() -> None:
     deadline = time.monotonic() + 60
     while time.monotonic() < deadline and not ready:
         try:
-            ready = http_get("http://127.0.0.1:8000/openapi.json", timeout=3)[0] == 200
+            ready = http_get(f"{BASE}/openapi.json", timeout=3)[0] == 200
         except Exception:
             time.sleep(1)
     run(["docker", "compose", "ps"], cwd=MS, title="docker compose ps")
-    http_step("http://127.0.0.1:8000/api/v1/recommendations?user_id=1", "Docker: Marketplace → Recommendations")
+    http_step(f"{BASE}/api/v1/recommendations?user_id=1", "Docker: Marketplace → Recommendations")
     run(["docker", "compose", "exec", "-T", "recommendations", "pytest", "-q"], cwd=MS,
         title="Docker: pytest в контейнере recommendations")
     run(["docker", "compose", "exec", "-T", "marketplace", "pytest", "-q", "test_marketplace_integration.py"],
@@ -323,6 +337,16 @@ def main() -> int:
     parser.add_argument("--no-docker", action="store_true", help="не запускать Docker Compose")
     args = parser.parse_args()
     started = datetime.now()
+
+    global MKT_PORT, BASE
+    MKT_PORT = pick_port()
+    BASE = f"http://127.0.0.1:{MKT_PORT}"
+    ENV["MARKETPLACE_PORT"] = str(MKT_PORT)        # для compose.yaml
+    ENV["MARKETPLACE_URL"] = BASE                   # для test_marketplace_integration.py
+    if MKT_PORT != 8000:
+        print(f"Порт 8000 недоступен, Marketplace будет на порту {MKT_PORT}", flush=True)
+        prose(f"> Порт 8000 на этом компьютере недоступен (занят или зарезервирован системой), "
+              f"поэтому Marketplace работает на порту **{MKT_PORT}** (`MARKETPLACE_PORT`).")
 
     step_env()
     if step_generate():

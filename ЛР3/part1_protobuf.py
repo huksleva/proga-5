@@ -90,7 +90,7 @@ for value in ("1", 2**70, 1.5):
 
 try:
     b.published_at = Timestamp()
-except AttributeError as error:
-    print("AttributeError:", error)
+except (AttributeError, TypeError) as error:   # старые версии protobuf — AttributeError, новые — TypeError
+    print(f"{type(error).__name__}:", error)
 b.published_at.CopyFrom(Timestamp(seconds=0))   # так правильно
 print(b.published_at.ToDatetime())

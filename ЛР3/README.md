@@ -132,5 +132,6 @@ docker compose down                   # остановить и удалить �
 ### Типичные проблемы
 
 - `ModuleNotFoundError: library...` / `*_pb2` — не выполнен `python generate.py` или скрипт запущен не из каталога `ЛР3`.
+- `WinError 10013` / `ports are not available ... 127.0.0.1:8000` — на Windows порт 8000 может быть зарезервирован системой (Hyper-V/WSL; проверить: `netsh interface ipv4 show excludedportrange protocol=tcp`). `run_lab.py` сам выбирает свободный порт (8000, 8080, 8001, …). Вручную: `uvicorn ... --port 8080`, а для Docker Compose — переменная `MARKETPLACE_PORT` (`$env:MARKETPLACE_PORT=8080; docker compose up --build -d`); тесты Marketplace читают адрес из `MARKETPLACE_URL`.
 - Порт 50051 / 8000 занят — остановите предыдущий запуск (в `run_lab.py` серверы поднимаются по очереди и гасятся сами).
 - Marketplace отвечает 503 — Recommendations не запущен или недоступен по адресу `RECOMMENDATIONS_HOST:RECOMMENDATIONS_PORT`.
